@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
@@ -8,6 +8,7 @@
   --color-primary-500: #1D9E75;
   --color-primary-600: #0F6E56;
   --color-primary-900: #04342C;
+  --font-family-sans: 'Plus Jakarta Sans', sans-serif;
 }
 
 * {
@@ -17,4 +18,13 @@
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: #F9FAFB;
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

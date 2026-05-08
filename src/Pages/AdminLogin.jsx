@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/Button'
-import { login } from '../api'
+import { login } from '../api/indx'
 
 export default function AdminLogin() {
   const navigate = useNavigate()

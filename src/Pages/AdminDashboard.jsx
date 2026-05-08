@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BookingRow from '../components/BookingRow'
 import StatusBadge from '../components/StatusBadge'
-import { getBookings, updateBooking } from '../api'
+import { getBookings, updateBooking } from '../api/indx'
 
 const DEMO_BOOKINGS = [
   { id:'1', customer_name:'Kavindi Perera',   service_name:'Hair Cut & Style',   booking_date:'2025-04-22', start_time:'11:15', duration_minutes:45, price_lkr:1500, status:'pending'   },

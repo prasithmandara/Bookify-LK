@@ -4,7 +4,7 @@ import ServiceCard from '../components/ServiceCard'
 import DatePill from '../components/DatePill'
 import TimeSlot from '../components/TimeSlot'
 import Button from '../components/Button'
-import { getServices, getSlots, createBooking } from '../api'
+import { getServices, getSlots, createBooking } from '../api/indx'
 
 const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT']
 

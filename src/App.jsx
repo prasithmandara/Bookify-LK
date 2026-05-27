@@ -129,29 +129,34 @@ export default function App() {
           onGoAdmin={() => setView(VIEWS.adminLogin)}
         />
       )}
-      {view === VIEWS.booking && (
-        <BookingPage
-          onConfirm={(booking) => {
-            setConfirmedBooking(booking);
-            setView(VIEWS.confirmation);
-          }}
-        />
-      )}
-      {view === VIEWS.confirmation && (
-        <ConfirmationPage
-          booking={confirmedBooking}
-          onNewBooking={() => {
-            setConfirmedBooking(null);
-            setView(VIEWS.booking);
-          }}
-        />
-      )}
-      {view === VIEWS.adminLogin && (
-        <AdminLogin onLogin={() => setView(VIEWS.adminDash)} />
-      )}
-      {view === VIEWS.adminDash && (
-        <AdminDashboard onLogout={() => setView(VIEWS.adminLogin)} />
-      )}
+          {view === VIEWS.booking && (
+      <BookingPage
+        onBack={() => setView(VIEWS.landing)}
+        onConfirm={(booking) => {
+          setConfirmedBooking(booking);
+          setView(VIEWS.confirmation);
+        }}
+      />
+    )}
+    {view === VIEWS.confirmation && (
+      <ConfirmationPage
+        booking={confirmedBooking}
+        onBack={() => setView(VIEWS.booking)}
+        onNewBooking={() => {
+          setConfirmedBooking(null);
+          setView(VIEWS.booking);
+        }}
+      />
+    )}
+    {view === VIEWS.adminLogin && (
+      <AdminLogin
+        onBack={() => setView(VIEWS.landing)}
+        onLogin={() => setView(VIEWS.adminDash)}
+      />
+    )}
+    {view === VIEWS.adminDash && (
+      <AdminDashboard onLogout={() => setView(VIEWS.adminLogin)} />
+    )}
     </div>
   );
 }

@@ -144,7 +144,17 @@ export default function AdminDashboard({ onLogout }) {
       </aside>
 
       {/* Main Content */}
-      <main style={{ flex: 1, padding: '36px', overflowX: 'hidden' }}>
+      <main style={{ flex: 1, padding: '36px', overflowX: 'hidden', position: 'relative' }}>
+      {/* Dashboard background glow */}
+      <div style={{
+        position: 'relative', top: 0, right: 0, width: '60%', height: '100vh',
+        pointerEvents: 'none', zIndex: 1,
+        background: `
+          radial-gradient(ellipse 60% 40% at 80% 20%, #c9a96e07 0%, transparent 60%),
+          radial-gradient(ellipse 40% 60% at 90% 80%, #c9a96e04 0%, transparent 60%)
+        `,
+      }} />
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '36px' }}>
           <div>

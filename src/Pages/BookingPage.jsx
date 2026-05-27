@@ -58,7 +58,7 @@ function StepIndicator({ current }) {
   );
 }
 
-export default function BookingPage({ onConfirm }) {
+export default function BookingPage({ onConfirm, onBack }) {
   const [step, setStep] = useState(0);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -87,7 +87,29 @@ export default function BookingPage({ onConfirm }) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--obsidian)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--obsidian)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      {/* Page background */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        background: `
+          radial-gradient(ellipse 70% 50% at 80% 10%, #c9a96e0d 0%, transparent 55%),
+          radial-gradient(ellipse 50% 70% at 5% 90%, #c9a96e08 0%, transparent 55%),
+          radial-gradient(ellipse 40% 40% at 50% 50%, #c9a96e04 0%, transparent 60%)
+        `,
+      }} />
+      {/* Geometric grid lines */}
+      <div style={{
+        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
+        backgroundImage: `
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px)
+        `,
+        backgroundSize: '80px 80px',
+        opacity: 0.3,
+        maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent)',
+        WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, black, transparent)',
+      }} />
+      
       {/* Header */}
       <header style={{
         padding: '20px 40px',
@@ -98,23 +120,20 @@ export default function BookingPage({ onConfirm }) {
         position: 'sticky', top: 0, zIndex: 100,
       }}>
         <Logo />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', color: 'var(--text-primary)' }}>
-              {business.name}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              ★ {business.rating} · {business.location}
-            </div>
-          </div>
-          <div style={{
-            width: 40, height: 40, borderRadius: '50%',
-            background: 'var(--obsidian-4)', border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '16px',
-          }}>
-            🌿
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button onClick={onBack} style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: 'transparent', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)', padding: '7px 14px',
+            color: 'var(--text-muted)', fontFamily: 'var(--font-body)',
+            fontSize: '13px', cursor: 'pointer', transition: 'var(--transition)',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.color = 'var(--gold)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+          >
+            ← Back
+          </button>
+          <Logo />
         </div>
       </header>
 

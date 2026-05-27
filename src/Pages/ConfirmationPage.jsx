@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Logo, Button, GoldDivider } from '../components/UI';
 
-export default function ConfirmationPage({ booking, onNewBooking }) {
+export default function ConfirmationPage({ booking, onNewBooking, onBack }) {
   const [visible, setVisible] = useState(false);
   const formatPrice = (p) => p ? `LKR ${p.toLocaleString('en-LK')}` : '';
 
@@ -46,6 +46,22 @@ export default function ConfirmationPage({ booking, onNewBooking }) {
         border: '1px solid var(--border-gold)',
         opacity: 0.1, animation: 'fadeIn 1s ease 0.7s both',
       }} />
+
+      {/* Star field */}
+    {[...Array(24)].map((_, i) => (
+      <div key={i} style={{
+        position: 'fixed',
+        top: `${Math.sin(i * 137.5) * 50 + 50}%`,
+        left: `${Math.cos(i * 137.5) * 50 + 50}%`,
+        width: i % 4 === 0 ? 2 : 1,
+        height: i % 4 === 0 ? 2 : 1,
+        borderRadius: '50%',
+        background: 'var(--gold)',
+        opacity: 0.08 + (i % 5) * 0.04,
+        pointerEvents: 'none',
+        animation: `fadeIn ${1 + (i % 3) * 0.5}s ease ${i * 0.1}s both`,
+      }} />
+    ))}
 
       <div style={{
         maxWidth: '520px', width: '100%',
@@ -192,11 +208,14 @@ export default function ConfirmationPage({ booking, onNewBooking }) {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px' }}>
+          <Button variant="ghost" size="lg" onClick={onBack} fullWidth>
+            ← Go Home
+          </Button>
           <Button variant="ghost" size="lg" onClick={onNewBooking} fullWidth>
             Book Another
           </Button>
           <Button variant="primary" size="lg" onClick={() => window.print()} fullWidth>
-            Save Confirmation
+            Save
           </Button>
         </div>
       </div>

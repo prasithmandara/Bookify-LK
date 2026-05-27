@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Logo, Input, Button } from '../components/UI';
 
-export default function AdminLogin({ onLogin }) {
+export default function AdminLogin({ onLogin, onBack }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,6 +30,17 @@ export default function AdminLogin({ onLogin }) {
       position: 'relative',
       overflow: 'hidden',
     }}>
+
+    {/* Honeycomb dot pattern */}
+    <div style={{
+      position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
+      backgroundImage: `radial-gradient(circle, #c9a96e18 1px, transparent 1px)`,
+      backgroundSize: '28px 28px',
+      opacity: 0.6,
+      maskImage: 'linear-gradient(135deg, transparent 30%, black 100%)',
+      WebkitMaskImage: 'linear-gradient(135deg, transparent 30%, black 100%)',
+    }} />
+    
       {/* Left decorative panel */}
       <div style={{
         width: '45%', minHeight: '100vh',
@@ -110,6 +121,18 @@ export default function AdminLogin({ onLogin }) {
           opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
           transition: 'all 0.6s ease',
         }}>
+          <button onClick={onBack} style={{
+            display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '32px',
+            background: 'transparent', border: 'none',
+            color: 'var(--text-muted)', fontFamily: 'var(--font-body)',
+            fontSize: '13px', cursor: 'pointer', padding: 0, transition: 'var(--transition)',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            ← Back to Home
+          </button>
+
           <div style={{ marginBottom: '40px' }}>
             <h1 style={{
               fontFamily: 'var(--font-display)', fontSize: '36px', fontWeight: 400,

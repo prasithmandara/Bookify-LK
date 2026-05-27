@@ -1,53 +1,136 @@
-import StatusBadge from './StatusBadge'
+import React from 'react';
+import { StatusBadge, Button } from './UI';
 
-export default function BookingRow({ booking, onApprove, onReschedule, onCancel }) {
-  const { id, customer_name, service_name, booking_date, start_time,
-          duration_minutes, price_lkr, status } = booking
+export function BookingRow({ booking, onUpdateStatus }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const [hovered, setHovered] = React.useState(false);
 
-  const formattedDate = new Date(booking_date).toLocaleDateString('en-US',
-    { weekday: 'short', month: 'short', day: 'numeric' })
+  const formatPrice = (p) => `LKR ${p.toLocaleString('en-LK')}`;
 
-  const fmt = (t) => {
-    const [h, m] = t.split(':').map(Number)
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
-  }
+  const initials = booking.customer.name
+    .split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-2xl p-4 transition-all
-      ${status === 'cancelled' ? 'opacity-50' : 'hover:border-gray-300'}`}>
-      <div className="flex justify-between items-start mb-1">
-        <div>
-          <p className="text-sm font-semibold text-gray-900">{customer_name}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{service_name}</p>
+    <>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '44px 1fr 1fr 120px 110px 160px',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px 20px',
+          background: hovered ? 'var(--obsidian-4)' : 'transparent',
+          borderBottom: '1px solid var(--border)',
+          transition: 'background 0.2s ease',
+          cursor: 'pointer',
+        }}
+        onClick={() => setExpanded(!expanded)}
+      >
+        {/* Avatar */}
+        <div style={{
+          width: 36, height: 36, borderRadius: '50%',
+          background: 'linear-gradient(135deg, var(--gold-dark), var(--gold))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 600,
+          color: 'var(--obsidian)', flexShrink: 0,
+        }}>
+          {initials}
         </div>
-        <StatusBadge status={status} />
+
+        {/* Customer */}
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>
+            {booking.customer.name}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+            {booking.customer.phone}
+          </div>
+        </div>
+
+        {/* Service */}
+        <div>
+          <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{booking.service.name}</div>
+          <div style={{ fontSize: '12px', color: 'var(--gold)', fontFamily: 'var(--font-display)', fontWeight: 500 }}>
+            {formatPrice(booking.service.price)}
+          </div>
+        </div>
+
+        {/* Date / Time */}
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+          <div>{booking.date}</div>
+          <div style={{ color: 'var(--text-muted)' }}>{booking.time}</div>
+        </div>
+
+        {/* ID */}
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: '12px',
+          color: 'var(--gold-dark)', letterSpacing: '0.08em',
+        }}>
+          #{booking.id}
+        </div>
+
+        {/* Status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <StatusBadge status={booking.status} />
+          <div style={{
+            marginLeft: 'auto', fontSize: '14px', color: 'var(--text-muted)',
+            transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease',
+          }}>
+            ▾
+          </div>
+        </div>
       </div>
-      <p className="text-xs text-gray-500 flex items-center gap-1 mt-2">
-        <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 12 12">
-          <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
-          <path d="M6 3v3l2 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
-        {formattedDate} · {fmt(start_time)} · {duration_minutes} min · LKR {price_lkr?.toLocaleString()}
-      </p>
-      {status !== 'cancelled' && status !== 'completed' && (
-        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-          {status === 'pending' && (
-            <button onClick={() => onApprove(id)}
-              className="flex-1 py-2 text-xs font-semibold rounded-xl bg-green-50 text-green-800 border border-green-200 hover:bg-green-100 transition-colors">
-              Approve
-            </button>
+
+      {/* Expanded row */}
+      {expanded && (
+        <div style={{
+          padding: '16px 20px 20px',
+          background: 'var(--obsidian-2)',
+          borderBottom: '1px solid var(--border)',
+          display: 'grid', gridTemplateColumns: '1fr auto',
+          gap: '20px', alignItems: 'end',
+          animation: 'fadeIn 0.2s ease',
+        }}>
+          <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Email</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{booking.customer.email}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Duration</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{booking.service.duration} minutes</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Booked On</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{booking.createdAt}</div>
+            </div>
+            {booking.notes && (
+              <div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Notes</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>"{booking.notes}"</div>
+              </div>
+            )}
+          </div>
+
+          {booking.status === 'Pending' && (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="danger" size="sm" onClick={() => onUpdateStatus(booking.id, 'Cancelled')}>
+                Decline
+              </Button>
+              <Button variant="success" size="sm" onClick={() => onUpdateStatus(booking.id, 'Confirmed')}>
+                ✓ Confirm
+              </Button>
+            </div>
           )}
-          <button onClick={() => onReschedule(id)}
-            className="flex-1 py-2 text-xs font-semibold rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors">
-            Reschedule
-          </button>
-          <button onClick={() => onCancel(id)}
-            className="flex-1 py-2 text-xs font-semibold rounded-xl bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors">
-            Cancel
-          </button>
+          {booking.status === 'Confirmed' && (
+            <Button variant="ghost" size="sm" onClick={() => onUpdateStatus(booking.id, 'Completed')}>
+              Mark Complete
+            </Button>
+          )}
         </div>
       )}
-    </div>
-  )
+    </>
+  );
 }

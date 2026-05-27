@@ -1,290 +1,473 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import ServiceCard from '../components/ServiceCard'
-import DatePill from '../components/DatePill'
-import TimeSlot from '../components/TimeSlot'
-import Button from '../components/Button'
-import { getServices, getSlots, createBooking } from '../indx'
+import React, { useState } from 'react';
+import { services, timeSlots, generateDates, business } from '../data/mockData';
+import { ServiceCard } from '../components/ServiceCard';
+import { DatePill, TimeSlot } from '../components/DateTimeSlots';
+import { Button, GoldDivider, Input, Logo } from '../components/UI';
 
-const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+const STEPS = ['Service', 'Date & Time', 'Your Details', 'Review'];
 
-function getNext7Days() {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    return {
-      day: DAYS[d.getDay()],
-      date: d.getDate(),
-      full: d.toISOString().split('T')[0],
-    }
-  })
+function StepIndicator({ current }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0', marginBottom: '48px' }}>
+      {STEPS.map((step, i) => (
+        <React.Fragment key={step}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: i < current ? 'linear-gradient(135deg, var(--gold-dark), var(--gold))' :
+                          i === current ? 'transparent' : 'var(--obsidian-4)',
+              border: i === current ? '2px solid var(--gold)' : i < current ? 'none' : '2px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.3s ease',
+              boxShadow: i === current ? '0 0 16px var(--gold-muted)' : 'none',
+            }}>
+              {i < current ? (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2.5 7l3 3 6-6" stroke="var(--obsidian)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 500,
+                  color: i === current ? 'var(--gold)' : 'var(--text-muted)',
+                }}>
+                  {i + 1}
+                </span>
+              )}
+            </div>
+            <span style={{
+              fontSize: '11px', fontWeight: 500,
+              color: i === current ? 'var(--gold)' : i < current ? 'var(--text-secondary)' : 'var(--text-muted)',
+              letterSpacing: '0.05em', whiteSpace: 'nowrap',
+              transition: 'color 0.3s ease',
+            }}>
+              {step}
+            </span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div style={{
+              flex: 1, height: '2px', marginBottom: '20px',
+              background: i < current
+                ? 'linear-gradient(90deg, var(--gold-dark), var(--gold))'
+                : 'var(--border)',
+              transition: 'background 0.4s ease',
+            }} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
 }
 
-export default function BookingPage() {
-  const { slug } = useParams()
-  const navigate = useNavigate()
-  const businessSlug = slug || 'glamour-salon'
+export default function BookingPage({ onConfirm }) {
+  const [step, setStep] = useState(0);
+  const [selectedService, setSelectedService] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
+  const dates = generateDates();
 
-  const [services, setServices]         = useState([])
-  const [slots, setSlots]               = useState([])
-  const [selectedService, setService]   = useState(null)
-  const [selectedDate, setDate]         = useState(getNext7Days()[0])
-  const [selectedSlot, setSlot]         = useState(null)
-  const [name, setName]                 = useState('')
-  const [phone, setPhone]               = useState('')
-  const [loading, setLoading]           = useState(false)
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [error, setError]               = useState('')
-  const days = getNext7Days()
+  const formatPrice = (p) => `LKR ${p.toLocaleString('en-LK')}`;
 
-  // Load services on mount
-  useEffect(() => {
-    getServices(businessSlug)
-      .then(r => setServices(r.data))
-      .catch(() => {
-        // Demo data when backend not running
-        setServices([
-          { id: '1', name: 'Hair Cut & Style',    duration_minutes: 45, price_lkr: 1500 },
-          { id: '2', name: 'Hair Colouring',       duration_minutes: 90, price_lkr: 4500 },
-          { id: '3', name: 'Manicure & Pedicure',  duration_minutes: 60, price_lkr: 2200 },
-          { id: '4', name: 'Facial Treatment',     duration_minutes: 60, price_lkr: 3000 },
-        ])
-      })
-  }, [businessSlug])
+  const canNext = () => {
+    if (step === 0) return !!selectedService;
+    if (step === 1) return !!selectedDate && !!selectedTime;
+    if (step === 2) return form.name && form.phone && form.email;
+    return true;
+  };
 
-  // Load slots when service or date changes
-  useEffect(() => {
-    if (!selectedService || !selectedDate) return
-    setLoadingSlots(true)
-    setSlot(null)
-    getSlots(businessSlug, selectedDate.full, selectedService.id)
-      .then(r => setSlots(r.data))
-      .catch(() => {
-        // Demo slots
-        setSlots([
-          { start: '09:00', available: false },
-          { start: '09:30', available: false },
-          { start: '10:00', available: true  },
-          { start: '10:30', available: true  },
-          { start: '11:00', available: true  },
-          { start: '11:30', available: false },
-          { start: '12:00', available: true  },
-          { start: '13:00', available: true  },
-          { start: '14:00', available: true  },
-          { start: '14:30', available: false },
-          { start: '15:00', available: true  },
-          { start: '16:00', available: true  },
-        ])
-      })
-      .finally(() => setLoadingSlots(false))
-  }, [selectedService, selectedDate])
-
-  const formatTime = (t) => {
-    const [h, m] = t.split(':').map(Number)
-    const ampm = h >= 12 ? 'PM' : 'AM'
-    return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`
-  }
-
-  const handleSubmit = async () => {
-    if (!selectedService) return setError('Please select a service')
-    if (!selectedSlot)    return setError('Please select a time slot')
-    if (!name.trim())     return setError('Please enter your name')
-    if (!phone.trim())    return setError('Please enter your phone number')
-    setError('')
-    setLoading(true)
-    try {
-      const { data } = await createBooking({
-        slug: businessSlug,
-        service_id:   selectedService.id,
-        name:         name.trim(),
-        phone:        phone.trim(),
-        booking_date: selectedDate.full,
-        start_time:   selectedSlot,
-      })
-      navigate('/confirmation', { state: { booking: data, service: selectedService } })
-    } catch {
-      // Demo: navigate with mock data
-      navigate('/confirmation', {
-        state: {
-          booking: {
-            booking_date: selectedDate.full,
-            start_time:   selectedSlot,
-            status:       'pending',
-          },
-          service: selectedService,
-          name,
-          phone,
-        }
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleSubmit = () => {
+    const booking = {
+      id: `BKF-${Math.floor(1000 + Math.random() * 9000)}`,
+      service: selectedService,
+      date: selectedDate,
+      time: selectedTime,
+      customer: form,
+    };
+    onConfirm(booking);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: 'var(--obsidian)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className="bg-green-600 px-5 pt-12 pb-6">
-        <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
-          Glamour Salon, Colombo
-        </span>
-        <h1 className="text-2xl font-bold text-white">Book an appointment</h1>
-        <p className="text-green-100 text-sm mt-1">Online booking · Instant confirmation</p>
-      </div>
-
-      <div className="px-4 pb-28 space-y-6 mt-4">
-
-        {/* Services */}
-        <section>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Choose a service
-          </p>
-          <div className="space-y-2">
-            {services.length === 0
-              ? [1,2,3].map(i => (
-                  <div key={i} className="h-16 bg-white rounded-2xl border border-gray-100 animate-pulse" />
-                ))
-              : services.map(s => (
-                  <ServiceCard
-                    key={s.id}
-                    name={s.name}
-                    duration={s.duration_minutes}
-                    price={s.price_lkr}
-                    selected={selectedService?.id === s.id}
-                    onClick={() => setService(s)}
-                  />
-                ))
-            }
+      <header style={{
+        padding: '20px 40px',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--obsidian-2)',
+        backdropFilter: 'blur(10px)',
+        position: 'sticky', top: 0, zIndex: 100,
+      }}>
+        <Logo />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', color: 'var(--text-primary)' }}>
+              {business.name}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              ★ {business.rating} · {business.location}
+            </div>
           </div>
-        </section>
-
-        {/* Date picker */}
-        <section>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Select date
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {days.map(d => (
-              <DatePill
-                key={d.full}
-                day={d.day}
-                date={d.date}
-                active={selectedDate.full === d.full}
-                onClick={() => setDate(d)}
-              />
-            ))}
+          <div style={{
+            width: 40, height: 40, borderRadius: '50%',
+            background: 'var(--obsidian-4)', border: '1px solid var(--border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '16px',
+          }}>
+            🌿
           </div>
-        </section>
+        </div>
+      </header>
 
-        {/* Time slots */}
-        {selectedService && (
-          <section>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-              Available times
+      {/* Hero Banner */}
+      {step === 0 && (
+        <div style={{
+          padding: '60px 40px 48px',
+          background: 'linear-gradient(135deg, var(--obsidian-2) 0%, var(--obsidian) 100%)',
+          borderBottom: '1px solid var(--border)',
+          position: 'relative', overflow: 'hidden',
+        }}>
+          {/* Decorative circles */}
+          <div style={{
+            position: 'absolute', top: -60, right: -60, width: 300, height: 300,
+            borderRadius: '50%', border: '1px solid var(--border-gold)', opacity: 0.3,
+          }} />
+          <div style={{
+            position: 'absolute', top: -20, right: -20, width: 180, height: 180,
+            borderRadius: '50%', border: '1px solid var(--border-gold)', opacity: 0.2,
+          }} />
+
+          <div style={{ maxWidth: '700px', animation: 'fadeUp 0.7s ease forwards' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '6px 16px', borderRadius: '100px',
+              background: 'var(--gold-muted)', border: '1px solid var(--border-gold)',
+              marginBottom: '20px',
+            }}>
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)', animation: 'pulse-gold 2s infinite' }} />
+              <span style={{ fontSize: '12px', color: 'var(--gold)', letterSpacing: '0.08em', fontWeight: 500 }}>
+                Available Today — Book Instantly
+              </span>
+            </div>
+            <h1 style={{
+              fontFamily: 'var(--font-display)', fontSize: '52px', fontWeight: 300,
+              color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: '16px',
+            }}>
+              Reserve Your{' '}
+              <span className="gold-shimmer">Perfect Experience</span>
+            </h1>
+            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', maxWidth: '500px', lineHeight: 1.7 }}>
+              {business.description}
             </p>
-            {loadingSlots ? (
-              <div className="grid grid-cols-3 gap-2">
-                {[1,2,3,4,5,6].map(i => (
-                  <div key={i} className="h-10 bg-white rounded-xl border border-gray-100 animate-pulse" />
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main style={{ flex: 1, padding: '40px', maxWidth: '1100px', margin: '0 auto', width: '100%' }}>
+        <StepIndicator current={step} />
+
+        {/* STEP 0: Service Selection */}
+        {step === 0 && (
+          <div style={{ animation: 'fadeUp 0.5s ease forwards' }}>
+            <div style={{ marginBottom: '28px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Select a Service
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                Choose from our curated menu of {services.filter(s => s.available).length} premium treatments
+              </p>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '16px',
+            }}>
+              {services.map(service => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  selected={selectedService?.id === service.id}
+                  onSelect={setSelectedService}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 1: Date & Time */}
+        {step === 1 && (
+          <div style={{ animation: 'fadeUp 0.5s ease forwards' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Choose Date & Time
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                All times are in Sri Lanka Standard Time (SLST, GMT+5:30)
+              </p>
+            </div>
+
+            {/* Selected service recap */}
+            <div style={{
+              padding: '16px 20px', marginBottom: '32px',
+              background: 'var(--obsidian-3)', border: '1px solid var(--border-gold)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Selected Service</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--gold-light)' }}>
+                  {selectedService?.name}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--gold)' }}>
+                  {formatPrice(selectedService?.price)}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {selectedService?.duration} min
+                </div>
+              </div>
+            </div>
+
+            {/* Date Picker */}
+            <div style={{ marginBottom: '36px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>
+                Select Date
+              </div>
+              <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {dates.map(d => (
+                  <DatePill
+                    key={d.id}
+                    date={d}
+                    selected={selectedDate?.id === d.id}
+                    onSelect={setSelectedDate}
+                  />
                 ))}
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-3 gap-2">
-                  {slots.map(slot => (
-                    <TimeSlot
-                      key={slot.start}
-                      time={formatTime(slot.start)}
-                      state={
-                        !slot.available ? 'taken' :
-                        selectedSlot === slot.start ? 'selected' : 'free'
-                      }
-                      onClick={() => setSlot(slot.start)}
-                    />
-                  ))}
-                </div>
-                <div className="flex gap-4 mt-2">
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <span className="w-2 h-2 rounded bg-gray-200 inline-block"/> Taken
+            </div>
+
+            {/* Time Slots */}
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '16px' }}>
+                Available Times
+                {selectedDate && (
+                  <span style={{ marginLeft: '10px', color: 'var(--gold)', textTransform: 'none', letterSpacing: 'normal', fontSize: '13px' }}>
+                    — {selectedDate.dayName}, {selectedDate.dayNum} {selectedDate.month}
                   </span>
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <span className="w-2 h-2 rounded border border-gray-300 inline-block"/> Free
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-gray-400">
-                    <span className="w-2 h-2 rounded bg-green-600 inline-block"/> Selected
-                  </span>
-                </div>
-              </>
-            )}
-          </section>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {timeSlots.map(slot => (
+                  <TimeSlot
+                    key={slot.id}
+                    slot={slot}
+                    selected={selectedTime?.id === slot.id}
+                    onSelect={setSelectedTime}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Customer details */}
-        <section>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-            Your details
-          </p>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Full name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="e.g. Kavindi Perera"
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm
-                  text-gray-900 placeholder-gray-400 outline-none focus:border-green-500
-                  focus:ring-2 focus:ring-green-100 transition-all"
-              />
+        {/* STEP 2: Customer Details */}
+        {step === 2 && (
+          <div style={{ animation: 'fadeUp 0.5s ease forwards', maxWidth: '560px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Your Details
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                We'll send your confirmation and reminders to these contacts
+              </p>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">Phone number</label>
-              <input
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <Input
+                label="Full Name"
+                placeholder="e.g. Anika Perera"
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                icon="👤"
+              />
+              <Input
+                label="Phone Number"
+                placeholder="+94 77 000 0000"
+                value={form.phone}
                 type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="e.g. 071 234 5678"
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm
-                  text-gray-900 placeholder-gray-400 outline-none focus:border-green-500
-                  focus:ring-2 focus:ring-green-100 transition-all"
+                onChange={e => setForm({ ...form, phone: e.target.value })}
+                icon="📞"
               />
-            </div>
-          </div>
-        </section>
+              <Input
+                label="Email Address"
+                placeholder="your@email.com"
+                value={form.email}
+                type="email"
+                onChange={e => setForm({ ...form, email: e.target.value })}
+                icon="✉"
+              />
 
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{
+                  fontFamily: 'var(--font-body)', fontSize: '12px', fontWeight: 500,
+                  color: 'var(--text-secondary)', letterSpacing: '0.08em', textTransform: 'uppercase',
+                }}>
+                  Special Notes <span style={{ color: 'var(--text-muted)', textTransform: 'none', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Any allergies, preferences, or special requests..."
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  style={{
+                    width: '100%', padding: '12px 16px',
+                    background: 'var(--obsidian-4)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-body)', fontSize: '14px',
+                    outline: 'none', resize: 'vertical', lineHeight: 1.6,
+                  }}
+                />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Booking summary */}
-        {selectedService && selectedSlot && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3">
-            <p className="text-xs font-bold text-green-700 uppercase tracking-widest mb-2">Summary</p>
-            <div className="flex justify-between text-sm">
-              <span className="text-green-800">{selectedService.name}</span>
-              <span className="font-bold text-green-800">LKR {selectedService.price_lkr?.toLocaleString()}</span>
+        {/* STEP 3: Review */}
+        {step === 3 && (
+          <div style={{ animation: 'fadeUp 0.5s ease forwards', maxWidth: '600px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '30px', fontWeight: 400, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                Review & Confirm
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                Please review your booking before confirming
+              </p>
             </div>
-            <div className="flex justify-between text-xs text-green-700 mt-1">
-              <span>{selectedDate.day}, {selectedDate.date} · {formatTime(selectedSlot)}</span>
-              <span>{selectedService.duration_minutes} min</span>
+
+            <div style={{
+              background: 'var(--obsidian-3)',
+              border: '1px solid var(--border-gold)',
+              borderRadius: 'var(--radius-lg)',
+              overflow: 'hidden',
+            }}>
+              {/* Booking ref header */}
+              <div style={{
+                padding: '20px 28px',
+                background: 'linear-gradient(135deg, var(--obsidian-4), var(--obsidian-3))',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--gold-light)' }}>
+                  Booking Summary
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--gold-dark)', letterSpacing: '0.1em' }}>
+                  PENDING CONFIRMATION
+                </div>
+              </div>
+
+              <div style={{ padding: '28px' }}>
+                {/* Service */}
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Service</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                    {selectedService?.name}
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                    {selectedService?.duration} minutes · {selectedService?.category}
+                  </div>
+                </div>
+
+                <GoldDivider style={{ marginBottom: '24px' }} />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Date</div>
+                    <div style={{ fontSize: '15px', color: 'var(--text-primary)' }}>
+                      {selectedDate?.dayName}, {selectedDate?.dayNum} {selectedDate?.month}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Time</div>
+                    <div style={{ fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                      {selectedTime?.time}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Customer</div>
+                    <div style={{ fontSize: '15px', color: 'var(--text-primary)' }}>{form.name}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Contact</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{form.phone}</div>
+                  </div>
+                </div>
+
+                {form.notes && (
+                  <>
+                    <GoldDivider style={{ marginBottom: '20px' }} />
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Notes</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>
+                        "{form.notes}"
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <GoldDivider style={{ marginBottom: '20px' }} />
+
+                {/* Price */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Total Amount</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 500, color: 'var(--gold)' }}>
+                    {formatPrice(selectedService?.price)}
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: '16px', padding: '12px 16px',
+                  background: 'var(--gold-muted)', borderRadius: 'var(--radius-sm)',
+                  fontSize: '12px', color: 'var(--gold)', lineHeight: 1.5,
+                }}>
+                  ℹ Your booking will be pending until confirmed by the studio. You'll receive an SMS and email notification once confirmed.
+                </div>
+              </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4">
-        <Button
-          label="Confirm Booking →"
-          full
-          loading={loading}
-          onClick={handleSubmit}
-          variant={(!selectedService || !selectedSlot || !name || !phone) ? 'disabled' : 'primary'}
-        />
-      </div>
+        {/* Navigation Buttons */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: '48px', paddingTop: '28px', borderTop: '1px solid var(--border)',
+        }}>
+          <Button
+            variant="ghost"
+            onClick={() => setStep(s => s - 1)}
+            style={{ visibility: step === 0 ? 'hidden' : 'visible' }}
+          >
+            ← Back
+          </Button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {step < 3 ? (
+              <Button
+                variant="primary"
+                size="lg"
+                disabled={!canNext()}
+                onClick={() => setStep(s => s + 1)}
+              >
+                Continue →
+              </Button>
+            ) : (
+              <Button variant="primary" size="lg" onClick={handleSubmit}>
+                ✓ Confirm Booking
+              </Button>
+            )}
+          </div>
+        </div>
+      </main>
     </div>
-  )
+  );
 }

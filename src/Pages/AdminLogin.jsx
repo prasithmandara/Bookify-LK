@@ -1,157 +1,204 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Button from '../components/Button'
-import { login } from '../indx'
+import React, { useState } from 'react';
+import { Logo, Input, Button } from '../components/UI';
 
-export default function AdminLogin() {
-  const navigate = useNavigate()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [showPw, setShowPw]     = useState(false)
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState('')
+export default function AdminLogin({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [visible, setVisible] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) return setError('Please enter email and password')
-    setError('')
-    setLoading(true)
-    try {
-      const { data } = await login(email, password)
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('admin', JSON.stringify(data.admin))
-      navigate('/admin/dashboard')
-    } catch (err) {
-      if (err.response?.status === 401) {
-        setError('Incorrect email or password')
-      } else {
-        // Demo login for testing
-        if (email === 'admin@glamour.lk' && password === 'admin123') {
-          localStorage.setItem('token', 'demo-token')
-          localStorage.setItem('admin', JSON.stringify({ email, role: 'owner' }))
-          navigate('/admin/dashboard')
-        } else {
-          setError('Backend not connected. Use admin@glamour.lk / admin123 for demo')
-        }
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+  React.useEffect(() => {
+    setTimeout(() => setVisible(true), 100);
+  }, []);
+
+  const handleLogin = () => {
+    if (!email || !password) { setError('Please fill in all fields.'); return; }
+    setError('');
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      onLogin();
+    }, 1400);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--obsidian)',
+      display: 'flex',
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+      {/* Left decorative panel */}
+      <div style={{
+        width: '45%', minHeight: '100vh',
+        background: 'linear-gradient(160deg, var(--obsidian-3) 0%, var(--obsidian-2) 100%)',
+        borderRight: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column',
+        justifyContent: 'space-between', padding: '48px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Geometric decoration */}
+        <div style={{
+          position: 'absolute', bottom: -80, right: -80,
+          width: 400, height: 400, borderRadius: '50%',
+          border: '1px solid var(--border-gold)', opacity: 0.25,
+        }} />
+        <div style={{
+          position: 'absolute', bottom: 40, right: -160,
+          width: 300, height: 300, borderRadius: '50%',
+          border: '1px solid var(--border-gold)', opacity: 0.15,
+        }} />
+        <div style={{
+          position: 'absolute', top: 120, right: 40,
+          width: 1, height: 200,
+          background: 'linear-gradient(180deg, transparent, var(--gold-dark), transparent)',
+          opacity: 0.4,
+        }} />
 
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24">
-              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
-                M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
+        <Logo size="lg" />
+
+        <div>
+          <div style={{
+            display: 'inline-block',
+            padding: '6px 14px', marginBottom: '24px',
+            background: 'var(--gold-muted)', borderRadius: '100px',
+            fontSize: '11px', color: 'var(--gold)', letterSpacing: '0.1em',
+            textTransform: 'uppercase', fontWeight: 500,
+          }}>
+            Admin Portal
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Bookify LK</h1>
-          <p className="text-sm text-gray-500 mt-1">Sign in to manage your bookings</p>
+          <h2 style={{
+            fontFamily: 'var(--font-display)', fontSize: '42px', fontWeight: 300,
+            color: 'var(--text-primary)', lineHeight: 1.2, marginBottom: '16px',
+          }}>
+            Manage your<br />
+            <span style={{ color: 'var(--gold-light)', fontStyle: 'italic' }}>bookings</span> with ease
+          </h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.7, maxWidth: '320px' }}>
+            Access your complete dashboard to approve appointments, manage your services, and track revenue in real-time.
+          </p>
         </div>
 
-        {/* Form card */}
-        <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm">
-          <div className="space-y-4">
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Business email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                placeholder="admin@yoursalon.lk"
-                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm
-                  text-gray-900 placeholder-gray-400 outline-none focus:border-green-500
-                  focus:ring-2 focus:ring-green-100 transition-all"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleLogin()}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 pr-12 rounded-2xl border border-gray-200 text-sm
-                    text-gray-900 placeholder-gray-400 outline-none focus:border-green-500
-                    focus:ring-2 focus:ring-green-100 transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPw ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94
-                        M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07
-                        a3 3 0 11-4.24-4.24M1 1l22 22"
-                        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    </svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                        stroke="currentColor" strokeWidth="1.5"/>
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5"/>
-                    </svg>
-                  )}
-                </button>
+        {/* Stats row */}
+        <div style={{ display: 'flex', gap: '32px' }}>
+          {[
+            { value: '1,247', label: 'Customers' },
+            { value: '98%', label: 'Satisfaction' },
+            { value: '4.9★', label: 'Rating' },
+          ].map(item => (
+            <div key={item.label}>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--gold)', fontWeight: 500 }}>
+                {item.value}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {item.label}
               </div>
             </div>
+          ))}
+        </div>
+      </div>
 
-            {/* Error */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                <p className="text-xs text-red-700">{error}</p>
-              </div>
-            )}
-
-            <Button
-              label="Sign in →"
-              full
-              loading={loading}
-              onClick={handleLogin}
-            />
-
-            <p className="text-center text-xs text-gray-400">
-              Forgot password?{' '}
-              <span className="text-green-600 cursor-pointer hover:underline">Reset it</span>
+      {/* Right login panel */}
+      <div style={{
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '48px',
+      }}>
+        <div style={{
+          width: '100%', maxWidth: '380px',
+          opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
+          transition: 'all 0.6s ease',
+        }}>
+          <div style={{ marginBottom: '40px' }}>
+            <h1 style={{
+              fontFamily: 'var(--font-display)', fontSize: '36px', fontWeight: 400,
+              color: 'var(--text-primary)', marginBottom: '8px',
+            }}>
+              Welcome back
+            </h1>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+              Sign in to your admin dashboard
             </p>
           </div>
-        </div>
 
-        {/* Register */}
-        <div className="mt-4 border-t border-gray-200 pt-4">
-          <p className="text-center text-xs text-gray-400 mb-3">Don't have an account?</p>
-          <button className="w-full py-3 border border-green-500 rounded-2xl text-sm font-semibold
-            text-green-600 hover:bg-green-50 transition-colors">
-            Register your business
-          </button>
-        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '28px' }}>
+            <Input
+              label="Email Address"
+              placeholder="admin@elitewellness.lk"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              type="email"
+              icon="✉"
+            />
+            <Input
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              type="password"
+              icon="🔒"
+            />
 
-        {/* Demo hint */}
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3">
-          <p className="text-xs text-blue-700 font-medium text-center">
-            Demo: admin@bookify.lk / admin123
-          </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '-8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input type="checkbox" style={{ accentColor: 'var(--gold)' }} />
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Remember me</span>
+              </label>
+              <span style={{ fontSize: '13px', color: 'var(--gold)', cursor: 'pointer' }}>
+                Forgot password?
+              </span>
+            </div>
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '12px 16px', marginBottom: '20px',
+              background: 'var(--error)15', border: '1px solid var(--error)40',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '13px', color: 'var(--error)',
+            }}>
+              ⚠ {error}
+            </div>
+          )}
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={loading}
+            onClick={handleLogin}
+          >
+            {loading ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{
+                  width: 16, height: 16, borderRadius: '50%',
+                  border: '2px solid var(--obsidian)40',
+                  borderTopColor: 'var(--obsidian)',
+                  animation: 'spin 0.7s linear infinite',
+                  display: 'inline-block',
+                }} />
+                Signing in...
+              </span>
+            ) : 'Sign In →'}
+          </Button>
+
+          <div style={{
+            marginTop: '28px', padding: '14px', textAlign: 'center',
+            background: 'var(--obsidian-3)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+          }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Demo credentials</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Any email + any password
+            </div>
+          </div>
+
+          <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
+            Protected by Bookify LK · {new Date().getFullYear()}
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
